@@ -22,6 +22,8 @@ import com.google.cloud.dataflow.sdk.transforms.windowing.BoundedWindow;
 import com.google.cloud.dataflow.sdk.transforms.windowing.GlobalWindow;
 import com.google.cloud.dataflow.sdk.transforms.windowing.PaneInfo;
 import com.google.cloud.dataflow.sdk.util.WindowedValue;
+import com.sun.tools.javac.comp.Todo;
+import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.flink.streaming.api.functions.source.EventTimeSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.operators.StreamSource;
@@ -49,8 +51,7 @@ public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<
 		return this.name;
 	}
 
-	WindowedValue<T> makeWindowedValue(
-			T output, Instant timestamp) {
+	WindowedValue<T> makeWindowedValue(T output, Instant timestamp) {
 		if (timestamp == null) {
 			timestamp = BoundedWindow.TIMESTAMP_MIN_VALUE;
 		}
@@ -77,6 +78,7 @@ public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<
 			Instant timestamp = reader.getCurrentTimestamp();
 
 			long milliseconds = timestamp.getMillis();
+			// TODO: 2/21/16 do we need this??? We ignore Flink timestamps.
 
 			// write it to the output collector
 			synchronized (ctx.getCheckpointLock()) {
