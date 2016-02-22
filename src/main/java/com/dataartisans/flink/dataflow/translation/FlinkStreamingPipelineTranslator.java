@@ -22,6 +22,13 @@ import com.google.cloud.dataflow.sdk.transforms.PTransform;
 import com.google.cloud.dataflow.sdk.values.PValue;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+/**
+ * This is a {@link FlinkPipelineTranslator} for streaming jobs. Its role is to translate the user-provided
+ * {@link com.google.cloud.dataflow.sdk.values.PCollection}-based job into a
+ * {@link org.apache.flink.streaming.api.datastream.DataStream} one.
+ *
+ * This is based on {@link com.google.cloud.dataflow.sdk.runners.DataflowPipelineTranslator}
+ * */
 public class FlinkStreamingPipelineTranslator extends FlinkPipelineTranslator {
 
 	/** The necessary context in the case of a straming job. */

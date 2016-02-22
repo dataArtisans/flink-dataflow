@@ -17,8 +17,18 @@ package com.dataartisans.flink.dataflow.translation;
 
 import com.google.cloud.dataflow.sdk.Pipeline;
 
+/**
+ * The role of this class is to translate the Beam operators to
+ * their Flink counterparts. If we have a streaming job, this is instantiated as a 
+ * {@link FlinkStreamingPipelineTranslator}. In other case, i.e. for a batch job, 
+ * a {@link FlinkBatchPipelineTranslator} is created. Correspondingly, the
+ * {@link com.google.cloud.dataflow.sdk.values.PCollection}-based user-provided job is translated into
+ * a {@link org.apache.flink.streaming.api.datastream.DataStream} (for streaming) or a
+ * {@link org.apache.flink.api.java.DataSet} (for batch) one.
+ */
 public abstract class FlinkPipelineTranslator implements Pipeline.PipelineVisitor {
 
+	//// TODO: 2/22/16 here I could have a static constructor that creates the adequate translator.
 	public void translate(Pipeline pipeline) {
 		pipeline.traverseTopologically(this);
 	}

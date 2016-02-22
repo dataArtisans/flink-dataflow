@@ -40,6 +40,7 @@ public class FlinkStreamingTranslationContext {
 	private AppliedPTransform<?, ?, ?> currentTransform;
 
 	public FlinkStreamingTranslationContext(StreamExecutionEnvironment env, PipelineOptions options) {
+		// TODO: 2/22/16 add the checkNotNull controls 
 		this.env = env;
 		this.options = options;
 		this.dataStreams = new HashMap<>();
