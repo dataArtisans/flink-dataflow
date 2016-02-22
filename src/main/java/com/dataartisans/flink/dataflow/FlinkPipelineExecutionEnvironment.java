@@ -234,10 +234,11 @@ public class FlinkPipelineExecutionEnvironment {
 		// although we do not use the generated timestamps,
 		// enabling timestamps is needed for the watermarks.
 		this.flinkStreamEnv.getConfig().enableTimestamps();
-		this.flinkStreamEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime); // TODO: 2/22/16 we should expose these options to the user.
-		this.flinkStreamEnv.enableCheckpointing(1000);
-		this.flinkStreamEnv.setNumberOfExecutionRetries(5);
-		this.flinkStreamEnv.getConfig().setExecutionRetryDelay(3000);
+		this.flinkStreamEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+
+		this.flinkStreamEnv.enableCheckpointing(options.getCheckpointingInterval());
+		this.flinkStreamEnv.setNumberOfExecutionRetries(options.getNumberOfExecutionRetries());
+		this.flinkStreamEnv.getConfig().setExecutionRetryDelay(options.getExecutionRetryDelay());
 	}
 
 	private void checkInitializationState() {

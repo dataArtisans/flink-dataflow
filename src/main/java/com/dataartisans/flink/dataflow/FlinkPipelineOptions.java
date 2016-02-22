@@ -73,4 +73,21 @@ public interface FlinkPipelineOptions extends PipelineOptions, ApplicationNameOp
 	@Default.Integer(-1)
 	Integer getParallelism();
 	void setParallelism(Integer value);
+
+	@Description("The interval between consecutive checkpoints.")
+	@Default.Long(-1)
+	long getCheckpointingInterval();
+	void setCheckpointingInterval(long interval);
+
+	@Description("Sets the number of times that failed tasks are re-executed. " +
+			"A value of zero effectively disables fault tolerance. A value of -1 indicates " +
+			"that the system default value (as defined in the configuration) should be used.")
+	@Default.Integer(-1)
+	int getNumberOfExecutionRetries();
+	void setNumberOfExecutionRetries(int retries);
+
+	@Description("Sets the delay between executions. A value of {@code -1} indicates that the default value should be used.")
+	@Default.Long(-1)
+	long getExecutionRetryDelay();
+	void setExecutionRetryDelay(long delay);
 }

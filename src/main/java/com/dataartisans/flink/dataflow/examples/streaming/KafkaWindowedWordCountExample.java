@@ -104,6 +104,9 @@ public class KafkaWindowedWordCountExample {
 		KafkaStreamingWordCountOptions options = PipelineOptionsFactory.fromArgs(args).as(KafkaStreamingWordCountOptions.class);
 		options.setJobName("KafkaExample");
 		options.setStreaming(true);
+		options.setCheckpointingInterval(1000);
+		options.setNumberOfExecutionRetries(5);
+		options.setExecutionRetryDelay(3000);
 		options.setRunner(FlinkPipelineRunner.class);
 
 		System.out.println(options.getKafkaTopic() +" "+ options.getZookeeper() +" "+ options.getBroker() +" "+ options.getGroup() );

@@ -114,7 +114,7 @@ public class FlinkStreamingPipelineTranslator extends FlinkPipelineTranslator {
 		@SuppressWarnings("unchecked")
 		StreamTransformTranslator<T> typedTranslator = (StreamTransformTranslator<T>) translator;
 
-		// create the applied PTransform on the batchContext
+		// create the applied PTransform on the streamingContext
 		streamingContext.setCurrentTransform(AppliedPTransform.of(
 				node.getFullName(), node.getInput(), node.getOutput(), (PTransform) transform));
 		typedTranslator.translateNode(typedTransform, streamingContext);
