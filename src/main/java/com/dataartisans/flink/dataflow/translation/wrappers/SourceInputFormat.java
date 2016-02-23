@@ -45,15 +45,13 @@ public class SourceInputFormat<T> implements InputFormat<T, SourceInputSplit<T>>
 
 	private final BoundedSource<T> initialSource;
 	private transient PipelineOptions options;
-	private final Coder<T> coder;
 
 	private BoundedSource.BoundedReader<T> reader = null;
 	private boolean reachedEnd = true;
 
-	public SourceInputFormat(BoundedSource<T> initialSource, PipelineOptions options, Coder<T> coder) {
+	public SourceInputFormat(BoundedSource<T> initialSource, PipelineOptions options) {
 		this.initialSource = initialSource;
 		this.options = options;
-		this.coder = coder;
 	}
 
 	private void writeObject(ObjectOutputStream out)
@@ -111,12 +109,12 @@ public class SourceInputFormat<T> implements InputFormat<T, SourceInputSplit<T>>
 	@Override
 	@SuppressWarnings("unchecked")
 	public SourceInputSplit<T>[] createInputSplits(int numSplits) throws IOException {
-		long desiredSizeBytes = 10000;
+		long desiredSizeBytes;
 		try {
 			desiredSizeBytes = initialSource.getEstimatedSizeBytes(options) / numSplits;
 			List<? extends Source<T>> shards = initialSource.splitIntoBundles(desiredSizeBytes,
 					options);
-			List<SourceInputSplit<T>> splits = new ArrayList<SourceInputSplit<T>>();
+			List<SourceInputSplit<T>> splits = new ArrayList<>();
 			int splitCount = 0;
 			for (Source<T> shard: shards) {
 				splits.add(new SourceInputSplit<>(shard, splitCount++));

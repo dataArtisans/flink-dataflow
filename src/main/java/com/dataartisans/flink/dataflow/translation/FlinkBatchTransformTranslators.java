@@ -151,7 +151,8 @@ public class FlinkBatchTransformTranslators {
 
 			TypeInformation<T> typeInformation = context.getTypeInfo(output);
 
-			DataSource<T> dataSource = new DataSource<>(context.getExecutionEnvironment(), new SourceInputFormat<>(source, context.getPipelineOptions(), coder), typeInformation, name);
+			DataSource<T> dataSource = new DataSource<>(context.getExecutionEnvironment(),
+					new SourceInputFormat<>(source, context.getPipelineOptions()), typeInformation, name);
 
 			context.setOutputDataSet(output, dataSource);
 		}
@@ -283,7 +284,7 @@ public class FlinkBatchTransformTranslators {
 	private static class ConsoleIOWriteTranslatorBatch implements FlinkBatchPipelineTranslator.BatchTransformTranslator<ConsoleIO.Write.Bound> {
 		@Override
 		public void translateNode(ConsoleIO.Write.Bound transform, FlinkBatchTranslationContext context) {
-			PValue input = (PValue) context.getInput(transform);
+			PValue input = context.getInput(transform);
 			DataSet<?> inputDataSet = context.getInputDataSet(input);
 			inputDataSet.printOnTaskManager(transform.getName());
 		}
