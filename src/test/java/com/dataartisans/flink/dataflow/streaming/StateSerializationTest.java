@@ -27,16 +27,18 @@ import com.google.cloud.dataflow.sdk.transforms.Combine;
 import com.google.cloud.dataflow.sdk.transforms.Sum;
 import com.google.cloud.dataflow.sdk.transforms.windowing.BoundedWindow;
 import com.google.cloud.dataflow.sdk.transforms.windowing.IntervalWindow;
+import com.google.cloud.dataflow.sdk.transforms.windowing.OutputTimeFns;
 import com.google.cloud.dataflow.sdk.util.TimeDomain;
 import com.google.cloud.dataflow.sdk.util.TimerInternals;
 import com.google.cloud.dataflow.sdk.util.state.*;
-import org.apache.flink.api.java.typeutils.runtime.ByteArrayInputView;
 import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.runtime.state.StateBackend;
+import org.apache.flink.runtime.state.AbstractStateBackend;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
+import org.apache.flink.runtime.util.DataInputDeserializer;
 import org.joda.time.Instant;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -46,17 +48,17 @@ public class StateSerializationTest {
 	private static final StateNamespace NAMESPACE_1 = StateNamespaces.global();
 	private static final String KEY_PREFIX = "TEST_";
 
-	private static final StateTag<ValueState<String>> STRING_VALUE_ADDR =
+	private static final StateTag<Object, ValueState<String>> STRING_VALUE_ADDR =
 			StateTags.value("stringValue", StringUtf8Coder.of());
-	private static final StateTag<ValueState<Integer>> INT_VALUE_ADDR =
+	private static final StateTag<Object, ValueState<Integer>> INT_VALUE_ADDR =
 			StateTags.value("stringValue", VarIntCoder.of());
-	private static final StateTag<CombiningValueState<Integer, Integer>> SUM_INTEGER_ADDR =
+	private static final StateTag<Object, CombiningValueStateInternal<Integer, int[], Integer>> SUM_INTEGER_ADDR =
 			StateTags.combiningValueFromInputInternal(
 					"sumInteger", VarIntCoder.of(), new Sum.SumIntegerFn());
-	private static final StateTag<BagState<String>> STRING_BAG_ADDR =
+	private static final StateTag<Object, BagState<String>> STRING_BAG_ADDR =
 			StateTags.bag("stringBag", StringUtf8Coder.of());
-	private static final StateTag<WatermarkStateInternal> WATERMARK_BAG_ADDR =
-			StateTags.watermarkStateInternal("watermark");
+	private static final StateTag<Object, WatermarkStateInternal<BoundedWindow>> WATERMARK_BAG_ADDR =
+			StateTags.watermarkStateInternal("watermark", OutputTimeFns.outputAtEarliestInputTimestamp());
 
 	private Combine.CombineFn combiner = new Sum.SumIntegerFn();
 
@@ -132,8 +134,9 @@ public class StateSerializationTest {
 		}
 
 		// restore the state
-		Map<String, FlinkStateInternals<String>> restoredPerKeyState = StateCheckpointUtils.decodeState(reader, combiner.asKeyedFn(), keyCoder, windowCoder, userClassloader);
-		if(restoredPerKeyState.size() != statePerKey.size()) {
+        Map<String, FlinkStateInternals<String>> restoredPerKeyState =
+                StateCheckpointUtils.decodeState(reader, combiner.asKeyedFn(), OutputTimeFns.outputAtEarliestInputTimestamp(), keyCoder, windowCoder, userClassloader);
+        if(restoredPerKeyState.size() != statePerKey.size()) {
 			return false;
 		}
 
@@ -169,7 +172,7 @@ public class StateSerializationTest {
 		return comp;
 	}
 
-	private void storeState(StateBackend.CheckpointStateOutputView out) throws Exception {
+	private void storeState(AbstractStateBackend.CheckpointStateOutputView out) throws Exception {
 		StateCheckpointWriter checkpointBuilder = StateCheckpointWriter.create(out);
 		Coder<String> keyCoder = StringUtf8Coder.of();
 
@@ -235,7 +238,8 @@ public class StateSerializationTest {
 				key,
 				StringUtf8Coder.of(),
 				IntervalWindow.getCoder(),
-				combiner.asKeyedFn());
+				combiner.asKeyedFn(),
+                OutputTimeFns.outputAtEarliestInputTimestamp());
 	}
 
 	@Test
@@ -244,12 +248,12 @@ public class StateSerializationTest {
 		test.initializeStateAndTimers();
 
 		MemoryStateBackend.MemoryCheckpointOutputStream memBackend = new MemoryStateBackend.MemoryCheckpointOutputStream(25728);
-		StateBackend.CheckpointStateOutputView out = new StateBackend.CheckpointStateOutputView(memBackend);
+		AbstractStateBackend.CheckpointStateOutputView out = new AbstractStateBackend.CheckpointStateOutputView(memBackend);
 
 		test.storeState(out);
 
 		byte[] contents = memBackend.closeAndGetBytes();
-		ByteArrayInputView in = new ByteArrayInputView(contents);
+		DataInputView in = new DataInputDeserializer(contents, 0, contents.length);
 
 		assertEquals(test.restoreAndTestState(in), true);
 	}

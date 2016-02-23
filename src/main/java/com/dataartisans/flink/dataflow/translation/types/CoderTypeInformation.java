@@ -34,7 +34,6 @@ public class CoderTypeInformation<T> extends TypeInformation<T> implements Atomi
 
 	private final Coder<T> coder;
 
-	@SuppressWarnings("unchecked")
 	public CoderTypeInformation(Coder<T> coder) {
 		Preconditions.checkNotNull(coder);
 		this.coder = coder;

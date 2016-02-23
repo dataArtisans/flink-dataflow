@@ -497,8 +497,7 @@ public class GroupAlsoByWindowTest {
 					}
 				});
 			} catch (Exception e) {
-				Throwables.propagateIfInstanceOf(e, UserCodeException.class);
-				throw new UserCodeException(e);
+				throw UserCodeException.wrap(e);
 			}
 		}
 
