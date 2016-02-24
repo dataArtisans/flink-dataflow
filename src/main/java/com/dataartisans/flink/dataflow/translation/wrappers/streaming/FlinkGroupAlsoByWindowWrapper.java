@@ -474,17 +474,22 @@ public class FlinkGroupAlsoByWindowWrapper<K, VIN, VACC, VOUT>
 
 				@Override
 				public Collection<? extends BoundedWindow> windows() {
-					throw new UnsupportedOperationException("windows() is not available when processing KeyedWorkItems.");
+					throw new UnsupportedOperationException("windows() is not available in Streaming mode.");
 				}
 
 				@Override
 				public PaneInfo pane() {
-					throw new UnsupportedOperationException("pane() is not available when processing KeyedWorkItems.");
+					throw new UnsupportedOperationException("pane() is not available in Streaming mode.");
 				}
 
 				@Override
 				public <T> void writePCollectionViewData(TupleTag<?> tag, Iterable<WindowedValue<T>> data, Coder<T> elemCoder) throws IOException {
-					throw new RuntimeException("writePCollectionViewData() not supported in Streaming mode.");
+					throw new RuntimeException("writePCollectionViewData() not available in Streaming mode.");
+				}
+
+				@Override
+				public <T> T sideInput(PCollectionView<T> view, BoundedWindow mainInputWindow) {
+					throw new RuntimeException("sideInput() is not available in Streaming mode.");
 				}
 			};
 		}
