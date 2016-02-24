@@ -28,7 +28,6 @@ import com.google.cloud.dataflow.sdk.Pipeline;
  */
 public abstract class FlinkPipelineTranslator implements Pipeline.PipelineVisitor {
 
-	//// TODO: 2/22/16 here I could have a static constructor that creates the adequate translator.
 	public void translate(Pipeline pipeline) {
 		pipeline.traverseTopologically(this);
 	}

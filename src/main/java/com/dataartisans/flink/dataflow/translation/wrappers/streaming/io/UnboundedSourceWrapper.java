@@ -30,6 +30,7 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
 import org.joda.time.Instant;
 
+// todo
 public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<T>> implements EventTimeSourceFunction<WindowedValue<T>>, Triggerable {
 
 	private final String name;
@@ -75,12 +76,9 @@ public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<
 			T item = reader.getCurrent();
 			Instant timestamp = reader.getCurrentTimestamp();
 
-			long milliseconds = timestamp.getMillis();
-			// TODO: 2/21/16 do we need this??? We ignore Flink timestamps.
-
 			// write it to the output collector
 			synchronized (ctx.getCheckpointLock()) {
-				context.collectWithTimestamp(makeWindowedValue(item, timestamp), milliseconds);
+				context.collectWithTimestamp(makeWindowedValue(item, timestamp), System.currentTimeMillis());
 			}
 
 			// try to go to the next record

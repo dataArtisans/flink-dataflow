@@ -16,6 +16,7 @@
 package com.dataartisans.flink.dataflow.translation;
 
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
+import com.google.cloud.dataflow.sdk.repackaged.com.google.common.base.Preconditions;
 import com.google.cloud.dataflow.sdk.transforms.AppliedPTransform;
 import com.google.cloud.dataflow.sdk.transforms.PTransform;
 import com.google.cloud.dataflow.sdk.values.*;
@@ -40,9 +41,8 @@ public class FlinkStreamingTranslationContext {
 	private AppliedPTransform<?, ?, ?> currentTransform;
 
 	public FlinkStreamingTranslationContext(StreamExecutionEnvironment env, PipelineOptions options) {
-		// TODO: 2/22/16 add the checkNotNull controls 
-		this.env = env;
-		this.options = options;
+		this.env = Preconditions.checkNotNull(env);
+		this.options = Preconditions.checkNotNull(options);
 		this.dataStreams = new HashMap<>();
 	}
 

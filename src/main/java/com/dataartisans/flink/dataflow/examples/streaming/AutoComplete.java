@@ -357,9 +357,9 @@ public class AutoComplete {
   public static void main(String[] args) throws IOException {
     Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
     options.setStreaming(true);
-    options.setCheckpointingInterval(1000);
+    options.setCheckpointingInterval(1000L);
     options.setNumberOfExecutionRetries(5);
-    options.setExecutionRetryDelay(3000);
+    options.setExecutionRetryDelay(3000L);
     options.setRunner(FlinkPipelineRunner.class);
 
     PTransform<? super PBegin, PCollection<String>> readSource =

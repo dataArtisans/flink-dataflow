@@ -236,9 +236,12 @@ public class FlinkPipelineExecutionEnvironment {
 		this.flinkStreamEnv.getConfig().enableTimestamps();
 		this.flinkStreamEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-		this.flinkStreamEnv.enableCheckpointing(options.getCheckpointingInterval());
 		this.flinkStreamEnv.setNumberOfExecutionRetries(options.getNumberOfExecutionRetries());
 		this.flinkStreamEnv.getConfig().setExecutionRetryDelay(options.getExecutionRetryDelay());
+		long checkpointInterval = options.getCheckpointingInterval();
+		if(checkpointInterval != -1) {
+			this.flinkStreamEnv.enableCheckpointing(options.getCheckpointingInterval());
+		}
 	}
 
 	private void checkInitializationState() {
