@@ -52,12 +52,12 @@ public class StateSerializationTest {
 			StateTags.value("stringValue", StringUtf8Coder.of());
 	private static final StateTag<Object, ValueState<Integer>> INT_VALUE_ADDR =
 			StateTags.value("stringValue", VarIntCoder.of());
-	private static final StateTag<Object, CombiningValueStateInternal<Integer, int[], Integer>> SUM_INTEGER_ADDR =
+	private static final StateTag<Object, AccumulatorCombiningState<Integer, int[], Integer>> SUM_INTEGER_ADDR =
 			StateTags.combiningValueFromInputInternal(
 					"sumInteger", VarIntCoder.of(), new Sum.SumIntegerFn());
 	private static final StateTag<Object, BagState<String>> STRING_BAG_ADDR =
 			StateTags.bag("stringBag", StringUtf8Coder.of());
-	private static final StateTag<Object, WatermarkStateInternal<BoundedWindow>> WATERMARK_BAG_ADDR =
+	private static final StateTag<Object, WatermarkHoldState<BoundedWindow>> WATERMARK_BAG_ADDR =
 			StateTags.watermarkStateInternal("watermark", OutputTimeFns.outputAtEarliestInputTimestamp());
 
 	private Combine.CombineFn combiner = new Sum.SumIntegerFn();
@@ -88,17 +88,17 @@ public class StateSerializationTest {
 		FlinkStateInternals<String> state = createState(key);
 
 		ValueState<String> value = state.state(NAMESPACE_1, STRING_VALUE_ADDR);
-		value.set("test");
+		value.write("test");
 
 		ValueState<Integer> value2 = state.state(NAMESPACE_1, INT_VALUE_ADDR);
-		value2.set(4);
-		value2.set(5);
+		value2.write(4);
+		value2.write(5);
 
-		CombiningValueState<Integer, Integer> combiningValue = state.state(NAMESPACE_1, SUM_INTEGER_ADDR);
+		AccumulatorCombiningState<Integer, int[], Integer> combiningValue = state.state(NAMESPACE_1, SUM_INTEGER_ADDR);
 		combiningValue.add(1);
 		combiningValue.add(2);
 
-		WatermarkStateInternal watermark = state.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
+		WatermarkHoldState<BoundedWindow> watermark = state.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
 		watermark.add(new Instant(1000));
 
 		BagState<String> bag = state.state(NAMESPACE_1, STRING_BAG_ADDR);
@@ -152,19 +152,19 @@ public class StateSerializationTest {
 		FlinkStateInternals<String> state = statePerKey.get(key);
 
 		ValueState<String> value = state.state(NAMESPACE_1, STRING_VALUE_ADDR);
-		boolean comp = value.get().read().equals("test");
+		boolean comp = value.read().equals("test");
 
 		ValueState<Integer> value2 = state.state(NAMESPACE_1, INT_VALUE_ADDR);
-		comp &= value2.get().read().equals(5);
+		comp &= value2.read().equals(5);
 
-		CombiningValueState<Integer, Integer> combiningValue = state.state(NAMESPACE_1, SUM_INTEGER_ADDR);
-		comp &= combiningValue.get().read().equals(3);
+		AccumulatorCombiningState<Integer, int[], Integer> combiningValue = state.state(NAMESPACE_1, SUM_INTEGER_ADDR);
+		comp &= combiningValue.read().equals(3);
 
-		WatermarkStateInternal watermark = state.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
-		comp &= watermark.get().read().equals(new Instant(1000));
+		WatermarkHoldState<BoundedWindow> watermark = state.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
+		comp &= watermark.read().equals(new Instant(1000));
 
 		BagState<String> bag = state.state(NAMESPACE_1, STRING_BAG_ADDR);
-		Iterator<String> it = bag.get().read().iterator();
+		Iterator<String> it = bag.read().iterator();
 		int i = 0;
 		while(it.hasNext()) {
 			comp &= it.next().equals("v"+ (++i));
@@ -206,25 +206,25 @@ public class StateSerializationTest {
 
 		ValueState<String> orValue = originalState.state(NAMESPACE_1, STRING_VALUE_ADDR);
 		ValueState<String> resValue = restoredState.state(NAMESPACE_1, STRING_VALUE_ADDR);
-		boolean comp = orValue.get().read().equals(resValue.get().read());
+		boolean comp = orValue.read().equals(resValue.read());
 
 		ValueState<Integer> orIntValue = originalState.state(NAMESPACE_1, INT_VALUE_ADDR);
 		ValueState<Integer> resIntValue = restoredState.state(NAMESPACE_1, INT_VALUE_ADDR);
-		comp &= orIntValue.get().read().equals(resIntValue.get().read());
+		comp &= orIntValue.read().equals(resIntValue.read());
 
-		CombiningValueState<Integer, Integer> combOrValue = originalState.state(NAMESPACE_1, SUM_INTEGER_ADDR);
-		CombiningValueState<Integer, Integer> combResValue = restoredState.state(NAMESPACE_1, SUM_INTEGER_ADDR);
-		comp &= combOrValue.get().read().equals(combResValue.get().read());
+		AccumulatorCombiningState<Integer, int[], Integer> combOrValue = originalState.state(NAMESPACE_1, SUM_INTEGER_ADDR);
+		AccumulatorCombiningState<Integer, int[], Integer> combResValue = restoredState.state(NAMESPACE_1, SUM_INTEGER_ADDR);
+		comp &= combOrValue.read().equals(combResValue.read());
 
-		WatermarkStateInternal orWatermark = originalState.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
-		WatermarkStateInternal resWatermark = restoredState.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
-		comp &= orWatermark.get().read().equals(resWatermark.get().read());
+		WatermarkHoldState orWatermark = originalState.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
+		WatermarkHoldState resWatermark = restoredState.state(NAMESPACE_1, WATERMARK_BAG_ADDR);
+		comp &= orWatermark.read().equals(resWatermark.read());
 
 		BagState<String> orBag = originalState.state(NAMESPACE_1, STRING_BAG_ADDR);
 		BagState<String> resBag = restoredState.state(NAMESPACE_1, STRING_BAG_ADDR);
 
-		Iterator<String> orIt = orBag.get().read().iterator();
-		Iterator<String> resIt = resBag.get().read().iterator();
+		Iterator<String> orIt = orBag.read().iterator();
+		Iterator<String> resIt = resBag.read().iterator();
 
 		while (orIt.hasNext() && resIt.hasNext()) {
 			comp &= orIt.next().equals(resIt.next());

@@ -87,22 +87,22 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
                 }
 
                 @Override
-                public <InputT, AccumT, OutputT> CombiningValueStateInternal<InputT, AccumT, OutputT> bindCombiningValue(
-                        StateTag<? super K, CombiningValueStateInternal<InputT, AccumT, OutputT>> address,
+                public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT> bindCombiningValue(
+                        StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                         Coder<AccumT> accumCoder, Combine.CombineFn<InputT, AccumT, OutputT> combineFn) {
                     return new FlinkInMemoryKeyedCombiningValue<>(encodeKey(namespace, address), combineFn.<K>asKeyedFn(), accumCoder);
                 }
 
                 @Override
-                public <InputT, AccumT, OutputT> CombiningValueStateInternal<InputT, AccumT, OutputT> bindKeyedCombiningValue(
-                        StateTag<? super K, CombiningValueStateInternal<InputT, AccumT, OutputT>> address,
+                public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT> bindKeyedCombiningValue(
+                        StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                         Coder<AccumT> accumCoder, Combine.KeyedCombineFn<? super K, InputT, AccumT, OutputT> combineFn) {
                     return new FlinkInMemoryKeyedCombiningValue<>(encodeKey(namespace, address), combineFn, accumCoder);
                 }
 
                 @Override
-                public <W extends BoundedWindow> WatermarkStateInternal<W> bindWatermark(StateTag<? super K, WatermarkStateInternal<W>> address, OutputTimeFn<? super W> outputTimeFn) {
-                    return new FlinkWatermarkStateInternalImpl<>(encodeKey(namespace, address), outputTimeFn);
+                public <W extends BoundedWindow> WatermarkHoldState<W> bindWatermark(StateTag<? super K, WatermarkHoldState<W>> address, OutputTimeFn<? super W> outputTimeFn) {
+                    return new FlinkWatermarkHoldStateImpl<>(encodeKey(namespace, address), outputTimeFn);
                 }
             };
         }
@@ -190,10 +190,10 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
             }
             case WATERMARK: {
                 @SuppressWarnings("unchecked")
-                StateTag<Object, WatermarkStateInternal<BoundedWindow>> stateTag = StateTags.watermarkStateInternal(tagId, outputTimeFn);
+                StateTag<Object, WatermarkHoldState<BoundedWindow>> stateTag = StateTags.watermarkStateInternal(tagId, outputTimeFn);
                 stateTag = isSystemTag ? StateTags.makeSystemTagInternal(stateTag) : stateTag;
                 @SuppressWarnings("unchecked")
-                FlinkWatermarkStateInternalImpl<?> watermark = (FlinkWatermarkStateInternalImpl<?>) inMemoryState.get(namespace, stateTag);
+                FlinkWatermarkHoldStateImpl<?> watermark = (FlinkWatermarkHoldStateImpl<?>) inMemoryState.get(namespace, stateTag);
                 watermark.restoreState(reader);
                 break;
             }
@@ -206,7 +206,7 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
             }
             case ACCUMULATOR: {
                 @SuppressWarnings("unchecked")
-                StateTag<K, CombiningValueStateInternal<?, ?, ?>> stateTag = StateTags.keyedCombiningValue(tagId, (Coder) coder, combineFn);
+                StateTag<K, AccumulatorCombiningState<?, ?, ?>> stateTag = StateTags.keyedCombiningValue(tagId, (Coder) coder, combineFn);
                 stateTag = isSystemTag ? StateTags.makeSystemTagInternal(stateTag) : stateTag;
                 @SuppressWarnings("unchecked")
                 FlinkInMemoryKeyedCombiningValue<?, ?, ?> combiningValue =
@@ -256,18 +256,19 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         }
 
         @Override
-        public StateContents<T> get() {
-            return new StateContents<T>() {
-                @Override
-                public T read() {
-                    return value;
-                }
-            };
+        public void write(T input) {
+            this.value = input;
         }
 
         @Override
-        public void set(T input) {
-            this.value = input;
+        public T read() {
+            return value;
+        }
+
+        @Override
+        public ValueState<T> readLater() {
+            // Ignore
+            return this;
         }
 
         @Override
@@ -297,12 +298,12 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         public void restoreState(StateCheckpointReader checkpointReader) throws IOException {
             ByteString valueContent = checkpointReader.getData();
             T outValue = elemCoder.decode(new ByteArrayInputStream(valueContent.toByteArray()), Coder.Context.OUTER);
-            set(outValue);
+            write(outValue);
         }
     }
 
-    private final class FlinkWatermarkStateInternalImpl<W extends BoundedWindow>
-            implements WatermarkStateInternal<W>, CheckpointableIF {
+    private final class FlinkWatermarkHoldStateImpl<W extends BoundedWindow>
+            implements WatermarkHoldState<W>, CheckpointableIF {
 
         private final ByteString stateKey;
 
@@ -310,7 +311,7 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 
         private OutputTimeFn<? super W> outputTimeFn;
 
-        public FlinkWatermarkStateInternalImpl(ByteString stateKey, OutputTimeFn<? super W> outputTimeFn) {
+        public FlinkWatermarkHoldStateImpl(ByteString stateKey, OutputTimeFn<? super W> outputTimeFn) {
             this.stateKey = stateKey;
             this.outputTimeFn = outputTimeFn;
         }
@@ -324,16 +325,6 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         }
 
         @Override
-        public StateContents<Instant> get() {
-            return new StateContents<Instant>() {
-                @Override
-                public Instant read() {
-                    return minimumHold;
-                }
-            };
-        }
-
-        @Override
         public void add(Instant watermarkHold) {
             if (minimumHold == null || minimumHold.isAfter(watermarkHold)) {
                 watermarkHoldAccessor = watermarkHold;
@@ -342,11 +333,17 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         }
 
         @Override
-        public StateContents<Boolean> isEmpty() {
-            return new StateContents<Boolean>() {
+        public ReadableState<Boolean> isEmpty() {
+            return new ReadableState<Boolean>() {
                 @Override
                 public Boolean read() {
                     return minimumHold == null;
+                }
+
+                @Override
+                public ReadableState<Boolean> readLater() {
+                    // Ignore
+                    return this;
                 }
             };
         }
@@ -354,6 +351,17 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         @Override
         public OutputTimeFn<? super W> getOutputTimeFn() {
             return outputTimeFn;
+        }
+
+        @Override
+        public Instant read() {
+            return minimumHold;
+        }
+
+        @Override
+        public WatermarkHoldState<W> readLater() {
+            // Ignore
+            return this;
         }
 
         @Override
@@ -382,7 +390,7 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
     }
 
     private final class FlinkInMemoryKeyedCombiningValue<InputT, AccumT, OutputT>
-            implements CombiningValueStateInternal<InputT, AccumT, OutputT>, CheckpointableIF {
+            implements AccumulatorCombiningState<InputT, AccumT, OutputT>, CheckpointableIF {
 
         private final ByteString stateKey;
         private final Combine.KeyedCombineFn<? super K, InputT, AccumT, OutputT> combineFn;
@@ -410,37 +418,28 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         }
 
         @Override
-        public StateContents<OutputT> get() {
-            return new StateContents<OutputT>() {
-                @Override
-                public OutputT read() {
-                    return combineFn.extractOutput(key, accum);
-                }
-            };
-        }
-
-        @Override
         public void add(InputT input) {
             isCleared = false;
             accum = combineFn.addInput(key, accum, input);
         }
 
         @Override
-        public StateContents<AccumT> getAccum() {
-            return new StateContents<AccumT>() {
-                @Override
-                public AccumT read() {
-                    return accum;
-                }
-            };
+        public AccumT getAccum() {
+            return accum;
         }
 
         @Override
-        public StateContents<Boolean> isEmpty() {
-            return new StateContents<Boolean>() {
+        public ReadableState<Boolean> isEmpty() {
+            return new ReadableState<Boolean>() {
                 @Override
                 public Boolean read() {
                     return isCleared;
+                }
+
+                @Override
+                public ReadableState<Boolean> readLater() {
+                    // Ignore
+                    return this;
                 }
             };
         }
@@ -454,6 +453,17 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         @Override
         public AccumT mergeAccumulators(Iterable<AccumT> accumulators) {
             return combineFn.mergeAccumulators(key, accumulators);
+        }
+
+        @Override
+        public OutputT read() {
+            return combineFn.extractOutput(key, accum);
+        }
+
+        @Override
+        public AccumulatorCombiningState<InputT, AccumT, OutputT> readLater() {
+            // Ignore
+            return this;
         }
 
         @Override
@@ -505,13 +515,14 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         }
 
         @Override
-        public StateContents<Iterable<T>> get() {
-            return new StateContents<Iterable<T>>() {
-                @Override
-                public Iterable<T> read() {
-                    return contents;
-                }
-            };
+        public Iterable<T> read() {
+            return contents;
+        }
+
+        @Override
+        public BagState<T> readLater() {
+            // Ignore
+            return this;
         }
 
         @Override
@@ -520,8 +531,14 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
         }
 
         @Override
-        public StateContents<Boolean> isEmpty() {
-            return new StateContents<Boolean>() {
+        public ReadableState<Boolean> isEmpty() {
+            return new ReadableState<Boolean>() {
+                @Override
+                public ReadableState<Boolean> readLater() {
+                    // Ignore
+                    return this;
+                }
+
                 @Override
                 public Boolean read() {
                     return contents.isEmpty();
