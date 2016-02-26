@@ -121,7 +121,9 @@ public class FlinkStreamingPipelineTranslator extends FlinkPipelineTranslator {
 	}
 
 	/**
-	 * A translator of a {@link PTransform}.
+	 * The interface that every Flink translator of a Beam operator should implement.
+	 * This interface is for <b>streaming</b> jobs. For examples of such translators see
+	 * {@link FlinkStreamingTransformTranslators}.
 	 */
 	public interface StreamTransformTranslator<Type extends PTransform> {
 		void translateNode(Type transform, FlinkStreamingTranslationContext context);

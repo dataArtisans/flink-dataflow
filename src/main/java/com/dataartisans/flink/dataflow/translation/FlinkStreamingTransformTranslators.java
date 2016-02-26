@@ -52,10 +52,10 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * This class contains the avaible mappings between Beam and Flink
+ * This class contains all the mappings between Beam and Flink
  * <b>streaming</b> transformations. The {@link FlinkStreamingPipelineTranslator}
  * traverses the Beam job and comes here to translate the encountered Beam transformations
- * into Flink one.
+ * into Flink one, based on the mapping available in this class.
  */
 public class FlinkStreamingTransformTranslators {
 
@@ -68,7 +68,6 @@ public class FlinkStreamingTransformTranslators {
 
 	// here you can find all the available translators.
 	static {
-
 		TRANSLATORS.put(Create.Values.class, new CreateStreamingTranslator());
 		TRANSLATORS.put(Read.Unbounded.class, new UnboundedReadSourceTranslator());
 		TRANSLATORS.put(ParDo.Bound.class, new ParDoBoundStreamingTranslator());

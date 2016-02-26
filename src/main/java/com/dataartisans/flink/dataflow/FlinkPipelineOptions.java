@@ -66,15 +66,13 @@ public interface FlinkPipelineOptions extends PipelineOptions, ApplicationNameOp
 	String getFlinkMaster();
 	void setFlinkMaster(String value);
 
-	/**
-	 * The degree of parallelism to be used when distributing operations onto workers.
-	 */
 	@Description("The degree of parallelism to be used when distributing operations onto workers.")
 	@Default.Integer(-1)
 	Integer getParallelism();
 	void setParallelism(Integer value);
 
-	@Description("The interval between consecutive checkpoints.")
+	@Description("The interval between consecutive checkpoints (i.e. snapshots of the current pipeline state used for " +
+			"fault tolerance).")
 	@Default.Long(-1L)
 	Long getCheckpointingInterval();
 	void setCheckpointingInterval(Long interval);
