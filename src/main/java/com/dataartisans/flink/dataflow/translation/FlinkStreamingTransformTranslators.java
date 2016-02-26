@@ -52,11 +52,10 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * <p>
- * Coder<?> entryCoder = pCollection.getCoder();
- * if (!(entryCoder instanceof KvCoder<?, ?>)) {
- * throw new IllegalArgumentException("PCollection does not use a KvCoder");
- * }
+ * This class contains all the mappings between Beam and Flink
+ * <b>streaming</b> transformations. The {@link FlinkStreamingPipelineTranslator}
+ * traverses the Beam job and comes here to translate the encountered Beam transformations
+ * into Flink one, based on the mapping available in this class.
  */
 public class FlinkStreamingTransformTranslators {
 
@@ -69,7 +68,6 @@ public class FlinkStreamingTransformTranslators {
 
 	// here you can find all the available translators.
 	static {
-
 		TRANSLATORS.put(Create.Values.class, new CreateStreamingTranslator());
 		TRANSLATORS.put(Read.Unbounded.class, new UnboundedReadSourceTranslator());
 		TRANSLATORS.put(ParDo.Bound.class, new ParDoBoundStreamingTranslator());
@@ -79,7 +77,6 @@ public class FlinkStreamingTransformTranslators {
 		TRANSLATORS.put(Combine.PerKey.class, new CombinePerKeyTranslator());
 		TRANSLATORS.put(Flatten.FlattenPCollectionList.class, new FlattenPCollectionTranslator());
 		TRANSLATORS.put(ParDo.BoundMulti.class, new ParDoBoundMultiStreamingTranslator());
-
 	}
 
 	public static FlinkStreamingPipelineTranslator.StreamTransformTranslator<?> getTranslator(PTransform<?, ?> transform) {

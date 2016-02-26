@@ -30,15 +30,20 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
 import org.joda.time.Instant;
 
-import java.util.Collection;
-
+/**
+ * A wrapper for Beam's unbounded sources. This class wraps around a source implementing the {@link com.google.cloud.dataflow.sdk.io.Read.Unbounded}
+ * interface.
+ *
+ *</p>
+ * For now we support non-parallel, not checkpointed sources.
+ * */
 public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<T>> implements EventTimeSourceFunction<WindowedValue<T>>, Triggerable {
 
 	private final String name;
 	private final UnboundedSource.UnboundedReader<T> reader;
 
 	private StreamingRuntimeContext runtime = null;
-	private StreamSource.ManualWatermarkContext<T> context = null;
+	private StreamSource.ManualWatermarkContext<WindowedValue<T>> context = null;
 
 	private volatile boolean isRunning = false;
 
@@ -51,8 +56,7 @@ public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<
 		return this.name;
 	}
 
-	WindowedValue<T> makeWindowedValue(
-			T output, Instant timestamp, Collection<? extends BoundedWindow> windows, PaneInfo pane) {
+	WindowedValue<T> makeWindowedValue(T output, Instant timestamp) {
 		if (timestamp == null) {
 			timestamp = BoundedWindow.TIMESTAMP_MIN_VALUE;
 		}
@@ -66,7 +70,7 @@ public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<
 					"Apparently " + this.name + " is not. Probably you should consider writing your own Wrapper for this source.");
 		}
 
-		context = (StreamSource.ManualWatermarkContext<T>) ctx;
+		context = (StreamSource.ManualWatermarkContext<WindowedValue<T>>) ctx;
 		runtime = (StreamingRuntimeContext) getRuntimeContext();
 
 		this.isRunning = reader.start();
@@ -78,11 +82,9 @@ public class UnboundedSourceWrapper<T> extends RichSourceFunction<WindowedValue<
 			T item = reader.getCurrent();
 			Instant timestamp = reader.getCurrentTimestamp();
 
-			long milliseconds = timestamp.getMillis();
-
 			// write it to the output collector
 			synchronized (ctx.getCheckpointLock()) {
-				ctx.collectWithTimestamp(makeWindowedValue(item, timestamp, null, PaneInfo.NO_FIRING), milliseconds);
+				context.collectWithTimestamp(makeWindowedValue(item, timestamp), System.currentTimeMillis());
 			}
 
 			// try to go to the next record

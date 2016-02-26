@@ -37,6 +37,11 @@ import org.joda.time.format.PeriodFormat;
 
 import java.util.Collection;
 
+/**
+ * An abstract class that encapsulates the common code of the the {@link com.google.cloud.dataflow.sdk.transforms.ParDo.Bound}
+ * and {@link com.google.cloud.dataflow.sdk.transforms.ParDo.BoundMulti} wrappers. See the {@link FlinkParDoBoundWrapper} and
+ * {@link FlinkParDoBoundMultiWrapper} for the actual wrappers of the aforementioned transformations.
+ * */
 public abstract class FlinkAbstractParDoWrapper<IN, OUTDF, OUTFL> extends RichFlatMapFunction<WindowedValue<IN>, WindowedValue<OUTFL>> {
 
 	private final DoFn<IN, OUTDF> doFn;
@@ -116,10 +121,10 @@ public abstract class FlinkAbstractParDoWrapper<IN, OUTDF, OUTFL> extends RichFl
 
 		@Override
 		public BoundedWindow window() {
-//			if (!(fn instanceof DoFn.RequiresWindowAccess)) {
-//				throw new UnsupportedOperationException(
-//						"window() is only available in the context of a DoFn marked as RequiresWindow.");
-//			}
+			if (!(fn instanceof DoFn.RequiresWindowAccess)) {
+				throw new UnsupportedOperationException(
+						"window() is only available in the context of a DoFn marked as RequiresWindow.");
+			}
 
 			Collection<? extends BoundedWindow> windows = this.element.getWindows();
 			if (windows.size() != 1) {
@@ -207,11 +212,11 @@ public abstract class FlinkAbstractParDoWrapper<IN, OUTDF, OUTFL> extends RichFl
 
 		if (windows == null) {
 			try {
-				windows = windowFn.assignWindows(windowFn.new AssignContext() {
+				 windows = windowFn.assignWindows(windowFn.new AssignContext() {
 					@Override
 					public Object element() {
 						throw new UnsupportedOperationException(
-								"WindowFn attempted to access input element when none was available"); // TODO: 12/16/15 aljoscha's comment in slack
+								"WindowFn attempted to access input element when none was available");
 					}
 
 					@Override

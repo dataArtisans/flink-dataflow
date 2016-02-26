@@ -16,9 +16,11 @@
 package com.dataartisans.flink.dataflow.translation.wrappers.streaming;
 
 import com.dataartisans.flink.dataflow.translation.types.CoderTypeInformation;
+import com.dataartisans.flink.dataflow.translation.types.VoidCoderTypeSerializer;
 import com.google.cloud.dataflow.sdk.coders.Coder;
 import com.google.cloud.dataflow.sdk.coders.KvCoder;
-import com.google.cloud.dataflow.sdk.util.*;
+import com.google.cloud.dataflow.sdk.coders.VoidCoder;
+import com.google.cloud.dataflow.sdk.util.WindowedValue;
 import com.google.cloud.dataflow.sdk.values.KV;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -26,6 +28,10 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
 
+/**
+ * This class groups the elements by key. It assumes that already the incoming stream
+ * is composed of <code>[Key,Value]</code> pairs.
+ * */
 public class FlinkGroupByKeyWrapper {
 
 	/**
@@ -44,7 +50,9 @@ public class FlinkGroupByKeyWrapper {
 
 					@Override
 					public K getKey(WindowedValue<KV<K, V>> value) throws Exception {
-						return value.getValue().getKey();
+						return (keyCoder instanceof VoidCoder) ?
+								(K) VoidCoderTypeSerializer.VoidValue.INSTANCE :
+								value.getValue().getKey();
 					}
 
 					@Override
