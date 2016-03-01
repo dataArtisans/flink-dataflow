@@ -156,6 +156,9 @@ public class FlinkPipelineRunner extends PipelineRunner<FlinkRunnerResult> {
 		// ExecutionEnvironment
 		options.setFlinkMaster("[auto]");
 		options.setStreaming(streaming);
+		options.setCheckpointingInterval(1000L);
+		options.setNumberOfExecutionRetries(5);
+		options.setExecutionRetryDelay(3000L);
 		return new FlinkPipelineRunner(options);
 	}
 

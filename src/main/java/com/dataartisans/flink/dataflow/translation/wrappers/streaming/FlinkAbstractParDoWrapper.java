@@ -212,7 +212,7 @@ public abstract class FlinkAbstractParDoWrapper<IN, OUTDF, OUTFL> extends RichFl
 
 		if (windows == null) {
 			try {
-				windows = windowFn.assignWindows(windowFn.new AssignContext() {
+				 windows = windowFn.assignWindows(windowFn.new AssignContext() {
 					@Override
 					public Object element() {
 						throw new UnsupportedOperationException(
