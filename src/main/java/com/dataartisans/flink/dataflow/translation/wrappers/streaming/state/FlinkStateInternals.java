@@ -32,6 +32,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
+// TODO: State should be rewritten to redirect to Flink per-key state so that coders and combiners don't need
+// to be serialized along with encoded values when snapshotting.
 public class FlinkStateInternals<K> implements StateInternals<K> {
 
 	private final K key;
@@ -40,8 +42,6 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 
 	private final Coder<? extends BoundedWindow> windowCoder;
 
-	private final Combine.KeyedCombineFn<K, ?, ?, ?> combineFn;
-
 	private final OutputTimeFn<? super BoundedWindow> outputTimeFn;
 
 	private Instant watermarkHoldAccessor;
@@ -49,12 +49,10 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 	public FlinkStateInternals(K key,
 	                           Coder<K> keyCoder,
 	                           Coder<? extends BoundedWindow> windowCoder,
-	                           Combine.KeyedCombineFn<K, ?, ?, ?> combineFn,
 	                           OutputTimeFn<? super BoundedWindow> outputTimeFn) {
 		this.key = key;
 		this.keyCoder = keyCoder;
 		this.windowCoder = windowCoder;
-		this.combineFn = combineFn;
 		this.outputTimeFn = outputTimeFn;
 	}
 
@@ -186,12 +184,31 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 
 		// ...then decode the coder (if there is one)...
 		Coder<?> coder = null;
-		if (!stateItemType.equals(StateType.WATERMARK)) {
-			ByteString coderBytes = reader.getData();
-			coder = InstantiationUtil.deserializeObject(coderBytes.toByteArray(), loader);
+		switch (stateItemType) {
+			case VALUE:
+			case LIST:
+			case ACCUMULATOR:
+				ByteString coderBytes = reader.getData();
+				coder = InstantiationUtil.deserializeObject(coderBytes.toByteArray(), loader);
+				break;
+			case WATERMARK:
+				break;
 		}
 
-		//... and finallyC, depending on the type of the state being decoded,
+		// ...then decode the combiner function (if there is one)...
+		CombineWithContext.KeyedCombineFnWithContext<? super K, ?, ?, ?> combineFn = null;
+		switch (stateItemType) {
+			case ACCUMULATOR:
+				ByteString combinerBytes = reader.getData();
+				combineFn = InstantiationUtil.deserializeObject(combinerBytes.toByteArray(), loader);
+				break;
+			case VALUE:
+			case LIST:
+			case WATERMARK:
+				break;
+		}
+
+		//... and finally, depending on the type of the state being decoded,
 		// 1) create the adequate stateTag,
 		// 2) create the state container,
 		// 3) restore the actual content.
@@ -222,7 +239,7 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 			}
 			case ACCUMULATOR: {
 				@SuppressWarnings("unchecked")
-				StateTag<K, AccumulatorCombiningState<?, ?, ?>> stateTag = StateTags.keyedCombiningValue(tagId, (Coder) coder, combineFn);
+				StateTag<K, AccumulatorCombiningState<?, ?, ?>> stateTag = StateTags.keyedCombiningValueWithContext(tagId, (Coder) coder, combineFn);
 				stateTag = isSystemTag ? StateTags.makeSystemTagInternal(stateTag) : stateTag;
 				@SuppressWarnings("unchecked")
 				FlinkInMemoryKeyedCombiningValue<?, ?, ?> combiningValue =
@@ -236,7 +253,15 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 	}
 
 	private ByteString encodeKey(StateNamespace namespace, StateTag<? super K, ?> address) {
-		return ByteString.copyFromUtf8(namespace.stringKey() + "+" + address.getId());
+		StringBuilder sb = new StringBuilder();
+		try {
+			namespace.appendTo(sb);
+			sb.append('+');
+			address.appendTo(sb);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return ByteString.copyFromUtf8(sb.toString());
 	}
 
 	private int getNoOfElements() {
@@ -295,7 +320,6 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 		@Override
 		public void persistState(StateCheckpointWriter checkpointBuilder) throws IOException {
 			if (value != null) {
-
 				// serialize the coder.
 				byte[] coder = InstantiationUtil.serializeObject(elemCoder);
 
@@ -305,9 +329,9 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 				ByteString data = stream.toByteString();
 
 				checkpointBuilder.addValueBuilder()
-						.setTag(stateKey)
-						.setData(coder)
-						.setData(data);
+					.setTag(stateKey)
+					.setData(coder)
+					.setData(data);
 			}
 		}
 
@@ -465,7 +489,7 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 		private final CombineWithContext.Context context;
 
 		private AccumT accum = null;
-		private boolean isCleared = true;
+		private boolean isClear = true;
 
 		private FlinkInMemoryKeyedCombiningValue(ByteString stateKey,
 		                                         Combine.CombineFn<InputT, AccumT, OutputT> combineFn,
@@ -509,12 +533,12 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 		@Override
 		public void clear() {
 			accum = combineFn.createAccumulator(key, context);
-			isCleared = true;
+			isClear = true;
 		}
 
 		@Override
 		public void add(InputT input) {
-			isCleared = false;
+			isClear = false;
 			accum = combineFn.addInput(key, accum, input, context);
 		}
 
@@ -527,21 +551,21 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 		public ReadableState<Boolean> isEmpty() {
 			return new ReadableState<Boolean>() {
 				@Override
-				public Boolean read() {
-					return isCleared;
-				}
-
-				@Override
 				public ReadableState<Boolean> readLater() {
 					// Ignore
 					return this;
+				}
+
+				@Override
+				public Boolean read() {
+					return isClear;
 				}
 			};
 		}
 
 		@Override
 		public void addAccum(AccumT accum) {
-			isCleared = false;
+			isClear = false;
 			this.accum = combineFn.mergeAccumulators(key, Arrays.asList(this.accum, accum), context);
 		}
 
@@ -563,15 +587,17 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 
 		@Override
 		public boolean shouldPersist() {
-			return accum != null;
+			return !isClear;
 		}
 
 		@Override
 		public void persistState(StateCheckpointWriter checkpointBuilder) throws IOException {
-			if (accum != null) {
-
+			if (!isClear) {
 				// serialize the coder.
 				byte[] coder = InstantiationUtil.serializeObject(accumCoder);
+
+				// serialize the combiner.
+				byte[] combiner = InstantiationUtil.serializeObject(combineFn);
 
 				// encode the accumulator into a ByteString
 				ByteString.Output stream = ByteString.newOutput();
@@ -580,9 +606,10 @@ public class FlinkStateInternals<K> implements StateInternals<K> {
 
 				// put the flag that the next serialized element is an accumulator
 				checkpointBuilder.addAccumulatorBuilder()
-						.setTag(stateKey)
-						.setData(coder)
-						.setData(data);
+					.setTag(stateKey)
+					.setData(coder)
+					.setData(combiner)
+					.setData(data);
 			}
 		}
 

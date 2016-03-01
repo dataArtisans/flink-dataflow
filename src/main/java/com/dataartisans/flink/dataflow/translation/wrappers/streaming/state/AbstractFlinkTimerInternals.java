@@ -30,37 +30,36 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public abstract class AbstractFlinkTimerInternals<K, VIN> implements TimerInternals, Serializable {
-	private K key;
+	private Instant currentInputWatermark = BoundedWindow.TIMESTAMP_MIN_VALUE;
+	private Instant currentOutputWatermark = BoundedWindow.TIMESTAMP_MIN_VALUE;
 
-	private Instant currentWatermark = BoundedWindow.TIMESTAMP_MIN_VALUE;
-
-	public void setCurrentWatermark(Instant watermark) {
-		checkIfValidWatermark(watermark);
-		this.currentWatermark = watermark;
+	public void setCurrentInputWatermark(Instant watermark) {
+		checkIfValidInputWatermark(watermark);
+		this.currentInputWatermark = watermark;
 	}
 
-	private void setCurrentWatermarkAfterRecovery(Instant watermark) {
-		if (!currentWatermark.isEqual(BoundedWindow.TIMESTAMP_MIN_VALUE)) {
-			throw new RuntimeException("Explicitly setting the watermark is only allowed on " +
+	public void setCurrentOutputWatermark(Instant watermark) {
+		checkIfValidOutputWatermark(watermark);
+		this.currentOutputWatermark = watermark;
+	}
+
+	private void setCurrentInputWatermarkAfterRecovery(Instant watermark) {
+		if (!currentInputWatermark.isEqual(BoundedWindow.TIMESTAMP_MIN_VALUE)) {
+			throw new RuntimeException("Explicitly setting the input watermark is only allowed on " +
 					"initialization after recovery from a node failure. Apparently this is not " +
 					"the case here as the watermark is already set.");
 		}
-		this.currentWatermark = watermark;
+		this.currentInputWatermark = watermark;
 	}
 
-	@Override
-	public void setTimer(com.google.cloud.dataflow.sdk.util.TimerInternals.TimerData timerKey) {
-		registerTimer(key, timerKey);
+	private void setCurrentOutputWatermarkAfterRecovery(Instant watermark) {
+		if (!currentOutputWatermark.isEqual(BoundedWindow.TIMESTAMP_MIN_VALUE)) {
+			throw new RuntimeException("Explicitly setting the output watermark is only allowed on " +
+				"initialization after recovery from a node failure. Apparently this is not " +
+				"the case here as the watermark is already set.");
+		}
+		this.currentOutputWatermark = watermark;
 	}
-
-	protected abstract void registerTimer(K key, TimerData timerKey);
-
-	@Override
-	public void deleteTimer(com.google.cloud.dataflow.sdk.util.TimerInternals.TimerData timerKey) {
-		unregisterTimer(key, timerKey);
-	}
-
-	protected abstract void unregisterTimer(K key, TimerData timerKey);
 
 	@Override
 	public Instant currentProcessingTime() {
@@ -69,7 +68,7 @@ public abstract class AbstractFlinkTimerInternals<K, VIN> implements TimerIntern
 
 	@Override
 	public Instant currentInputWatermarkTime() {
-		return this.currentWatermark;
+		return currentInputWatermark;
 	}
 
 	@Nullable
@@ -79,19 +78,26 @@ public abstract class AbstractFlinkTimerInternals<K, VIN> implements TimerIntern
 		return null;
 	}
 
-	@Nullable
 	@Override
 	public Instant currentOutputWatermarkTime() {
-		// TODO
-		return null;
+		return currentOutputWatermark;
 	}
 
-	private void checkIfValidWatermark(Instant newWatermark) {
-		if (currentWatermark.isAfter(newWatermark)) {
+	private void checkIfValidInputWatermark(Instant newWatermark) {
+		if (currentInputWatermark.isAfter(newWatermark)) {
 			throw new IllegalArgumentException(String.format(
-					"Cannot set current watermark to %s. Newer watermarks " +
+					"Cannot set current input watermark to %s. Newer watermarks " +
 							"must be no earlier than the current one (%s).",
-					newWatermark, this.currentWatermark));
+					newWatermark, currentInputWatermark));
+		}
+	}
+
+	private void checkIfValidOutputWatermark(Instant newWatermark) {
+		if (currentOutputWatermark.isAfter(newWatermark)) {
+			throw new IllegalArgumentException(String.format(
+				"Cannot set current output watermark to %s. Newer watermarks " +
+					"must be no earlier than the current one (%s).",
+				newWatermark, currentOutputWatermark));
 		}
 	}
 
@@ -103,12 +109,14 @@ public abstract class AbstractFlinkTimerInternals<K, VIN> implements TimerIntern
 			throw new RuntimeException("The Context has not been initialized.");
 		}
 
-		writer.setTimestamp(currentWatermark);
+		writer.setTimestamp(currentInputWatermark);
+		writer.setTimestamp(currentOutputWatermark);
 	}
 
 	public void restoreTimerInternals(StateCheckpointReader reader,
 	                                  KvCoder<K, VIN> kvCoder,
 	                                  Coder<? extends BoundedWindow> windowCoder) throws IOException {
-		setCurrentWatermarkAfterRecovery(reader.getTimestamp());
+		setCurrentInputWatermarkAfterRecovery(reader.getTimestamp());
+		setCurrentOutputWatermarkAfterRecovery(reader.getTimestamp());
 	}
 }

@@ -212,7 +212,7 @@ public class FlinkJobExecutionEnvironment {
 
 		// although we do not use the generated timestamps,
 		// enabling timestamps is needed for the watermarks.
-		this.flinkStreamEnv.getConfig().enableTimestamps();
+		// this.flinkStreamEnv.getConfig().enableTimestamps();
 
 		this.flinkStreamEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 

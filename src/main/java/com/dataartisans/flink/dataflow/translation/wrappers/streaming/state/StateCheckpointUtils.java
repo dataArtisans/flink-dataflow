@@ -54,7 +54,6 @@ public class StateCheckpointUtils {
 
 	public static <K> Map<K, FlinkStateInternals<K>> decodeState(
 			StateCheckpointReader reader,
-			Combine.KeyedCombineFn<K, ?, ?, ?> combineFn,
 			OutputTimeFn<? super BoundedWindow> outputTimeFn,
 			Coder<K> keyCoder,
 			Coder<? extends BoundedWindow> windowCoder,
@@ -72,7 +71,7 @@ public class StateCheckpointUtils {
 
 			//decode the state associated to the key.
 			FlinkStateInternals<K> stateForKey =
-					new FlinkStateInternals<>(key, keyCoder, windowCoder, combineFn, outputTimeFn);
+					new FlinkStateInternals<>(key, keyCoder, windowCoder, outputTimeFn);
 			stateForKey.restoreState(reader, classLoader);
 			perKeyStateInternals.put(key, stateForKey);
 		}

@@ -7,7 +7,7 @@
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,9 +23,9 @@
 
 	<groupId>com.dataartisans</groupId>
 	<artifactId>flink-dataflow</artifactId>
-	<version>0.2</version>
+	<version>0.3-SNAPSHOT</version>
 
-	<name>Flink Dataflow Runner</name>
+	<name>Flink Beam Runner</name>
 	<packaging>jar</packaging>
 
 	<inceptionYear>2015</inceptionYear>
@@ -42,7 +42,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<flink.version>1.0-SNAPSHOT</flink.version>
-		<dataflow.version>1.5.0-SNAPSHOT</dataflow.version>
+		<beam.version>1.5.0-SNAPSHOT</beam.version>
 		<!-- Default parameters for mvn exec:exec -->
 		<clazz>com.dataartisans.flink.dataflow.examples.WordCount</clazz>
 		<input>kinglear.txt</input>
@@ -113,7 +113,7 @@
 		<dependency>
 			<groupId>com.google.cloud.dataflow</groupId>
 			<artifactId>google-cloud-dataflow-java-sdk-all</artifactId>
-			<version>${dataflow.version}</version>
+			<version>${beam.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.slf4j</groupId>
