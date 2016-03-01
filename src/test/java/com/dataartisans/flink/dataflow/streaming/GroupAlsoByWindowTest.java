@@ -85,7 +85,7 @@ public class GroupAlsoByWindowTest {
 				.withMode(WindowingStrategy.AccumulationMode.ACCUMULATING_FIRED_PANES)
 				.withAllowedLateness(Duration.millis(1000));
 		long initialTime = 0L;
-		Pipeline pipeline = FlinkTestPipeline.create();
+		Pipeline pipeline = FlinkTestPipeline.createForStreaming();
 
 		KvCoder<String, Integer> inputCoder = KvCoder.of(StringUtf8Coder.of(), VarIntCoder.of());
 
@@ -143,7 +143,7 @@ public class GroupAlsoByWindowTest {
 		WindowingStrategy strategy = sessionWindowingStrategy;
 
 		long initialTime = 0L;
-		Pipeline pipeline = FlinkTestPipeline.create();
+		Pipeline pipeline = FlinkTestPipeline.createForStreaming();
 
 		KvCoder<String, Integer> inputCoder = KvCoder.of(StringUtf8Coder.of(), VarIntCoder.of());
 
@@ -380,7 +380,7 @@ public class GroupAlsoByWindowTest {
 	}
 
 	private OneInputStreamOperatorTestHarness createTestingOperatorAndState(WindowingStrategy strategy, long initialTime) throws Exception {
-		Pipeline pipeline = FlinkTestPipeline.create();
+		Pipeline pipeline = FlinkTestPipeline.createForStreaming();
 
 		KvCoder<String, Integer> inputCoder = KvCoder.of(StringUtf8Coder.of(), VarIntCoder.of());
 
@@ -476,7 +476,7 @@ public class GroupAlsoByWindowTest {
 					@Override
 					public Object element() {
 						throw new UnsupportedOperationException(
-								"WindowFn attempted to access input element when none was available"); // TODO: 12/16/15 aljoscha's comment in slack
+								"WindowFn attempted to access input element when none was available");
 					}
 
 					@Override

@@ -29,6 +29,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 
+/**
+ * An implementation of Beam's {@link TimerInternals}, that also provides serialization functionality.
+ * The latter is used when snapshots of the current state are taken, for fault-tolerance.
+ * */
 public abstract class AbstractFlinkTimerInternals<K, VIN> implements TimerInternals, Serializable {
 	private Instant currentInputWatermark = BoundedWindow.TIMESTAMP_MIN_VALUE;
 	private Instant currentOutputWatermark = BoundedWindow.TIMESTAMP_MIN_VALUE;

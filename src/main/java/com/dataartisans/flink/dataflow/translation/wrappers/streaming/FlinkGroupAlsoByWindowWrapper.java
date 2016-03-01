@@ -51,9 +51,9 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * This class is the key class implementing all the windowing/triggering logic of Google Dataflow.
- * To provide full compatibility and support all the windowing/triggering combinations offered by
- * Dataflow, we opted for a strategy that uses the SDK's code for doing these operations
+ * This class is the key class implementing all the windowing/triggering logic of Apache Beam.
+ * To provide full compatibility and support for all the windowing/triggering combinations offered by
+ * Beam, we opted for a strategy that uses the SDK's code for doing these operations. See the code in
  * ({@link com.google.cloud.dataflow.sdk.util.GroupAlsoByWindowsDoFn}.
  * <p/>
  * In a nutshell, when the execution arrives to this operator, we expect to have a stream <b>already
@@ -238,9 +238,7 @@ public class FlinkGroupAlsoByWindowWrapper<K, VIN, VACC, VOUT>
 				this.operator = (DoFn) GroupAlsoByWindowViaWindowSetDoFn.create(
 						(WindowingStrategy<?, W>) this.windowingStrategy, SystemReduceFn.<K, VIN, W>buffering(inputValueCoder));
 			} else {
-
 				Coder<K> inputKeyCoder = inputKvCoder.getKeyCoder();
-				//CoderRegistry dataflowRegistry = input.getPipeline().getCoderRegistry();
 
 				AppliedCombineFn<K, VIN, VACC, VOUT> appliedCombineFn = AppliedCombineFn
 						.withInputCoder(combineFn, coderRegistry, inputKvCoder);

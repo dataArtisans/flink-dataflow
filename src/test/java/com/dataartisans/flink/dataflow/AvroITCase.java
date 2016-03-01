@@ -16,31 +16,33 @@
 package com.dataartisans.flink.dataflow;
 
 import com.google.cloud.dataflow.sdk.Pipeline;
-import com.google.cloud.dataflow.sdk.coders.StringUtf8Coder;
+import com.google.cloud.dataflow.sdk.coders.AvroCoder;
+import com.google.cloud.dataflow.sdk.io.AvroIO;
 import com.google.cloud.dataflow.sdk.io.TextIO;
 import com.google.cloud.dataflow.sdk.transforms.Create;
-import com.google.cloud.dataflow.sdk.transforms.RemoveDuplicates;
-import com.google.cloud.dataflow.sdk.values.PCollection;
+import com.google.cloud.dataflow.sdk.transforms.DoFn;
+import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.common.base.Joiner;
+import org.apache.flink.api.io.avro.example.User;
 import org.apache.flink.test.util.JavaProgramTestBase;
 
-import java.util.Arrays;
-import java.util.List;
 
-
-public class RemoveDuplicatesITCase extends JavaProgramTestBase {
+public class AvroITCase extends JavaProgramTestBase {
 
 	protected String resultPath;
+	protected String tmpPath;
 
-	public RemoveDuplicatesITCase(){
+	public AvroITCase(){
 	}
 
 	static final String[] EXPECTED_RESULT = new String[] {
-			"k1", "k5", "k2", "k3"};
+			"Joe red 3", "Mary blue 4"};
 
 	@Override
 	protected void preSubmit() throws Exception {
 		resultPath = getTempDirPath("result");
+		tmpPath = getTempDirPath("tmp");
+
 	}
 
 	@Override
@@ -50,20 +52,32 @@ public class RemoveDuplicatesITCase extends JavaProgramTestBase {
 
 	@Override
 	protected void testProgram() throws Exception {
+		runProgram(tmpPath, resultPath);
+	}
 
-		List<String> strings = Arrays.asList("k1", "k5", "k5", "k2", "k1", "k2", "k3");
-
+	private static void runProgram(String tmpPath, String resultPath) {
 		Pipeline p = FlinkTestPipeline.createForBatch();
 
-		PCollection<String> input =
-				p.apply(Create.of(strings))
-						.setCoder(StringUtf8Coder.of());
+		p.apply(Create.of(new User("Joe", 3, "red"), new User("Mary", 4, "blue")).withCoder(AvroCoder.of(User.class)))
+				.apply(AvroIO.Write.to(tmpPath).withSchema(User.class));
 
-		PCollection<String> output =
-				input.apply(RemoveDuplicates.<String>create());
+		p.run();
 
-		output.apply(TextIO.Write.to(resultPath));
+		p = FlinkTestPipeline.createForBatch();
+
+		p.apply(AvroIO.Read.from(tmpPath).withSchema(User.class))
+				.apply(ParDo.of(new DoFn<User, String>() {
+					@Override
+					public void processElement(ProcessContext c) throws Exception {
+						User u = c.element();
+						String result = u.getName() + " " + u.getFavoriteColor() + " " + u.getFavoriteNumber();
+						c.output(result);
+					}
+				}))
+				.apply(TextIO.Write.to(resultPath));
+
 		p.run();
 	}
+
 }
 
