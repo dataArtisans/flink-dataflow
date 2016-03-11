@@ -22,7 +22,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.dataartisans</groupId>
-	<artifactId>flink-dataflow</artifactId>
+	<artifactId>flink-dataflow_2.10</artifactId>
 	<version>0.3-SNAPSHOT</version>
 
 	<name>Flink Beam Runner</name>
