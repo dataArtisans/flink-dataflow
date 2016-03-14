@@ -116,10 +116,11 @@ p.run();
 
 To execute the example, let's first get some sample data:
 
-    curl http://www.gutenberg.org/cache/epub/1128/pg1128.txt > kinglear.txt
+    curl http://www.gutenberg.org/cache/epub/1128/pg1128.txt > examples/kinglear.txt
 
 Then let's run the included WordCount locally on your machine:
 
+    cd examples
     mvn exec:exec -Dinput=kinglear.txt -Doutput=wordcounts.txt
 
 Congratulations, you have run your first Google Dataflow program on top of Apache Flink!
@@ -150,7 +151,7 @@ The contents of the root `pom.xml` should be slightly changed aftewards (explana
         <dependency>
             <groupId>com.dataartisans</groupId>
             <artifactId>flink-dataflow</artifactId>
-            <version>0.2</version>
+            <version>0.3-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

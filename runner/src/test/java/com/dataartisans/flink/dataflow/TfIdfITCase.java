@@ -15,7 +15,7 @@
  */
 package com.dataartisans.flink.dataflow;
 
-import com.dataartisans.flink.dataflow.examples.TFIDF;
+import com.google.cloud.dataflow.examples.complete.TfIdf;
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.coders.StringDelegateCoder;
 import com.google.cloud.dataflow.sdk.io.TextIO;
@@ -62,7 +62,7 @@ public class TfIdfITCase extends JavaProgramTestBase {
 						KV.of(new URI("x"), "a b c d"),
 						KV.of(new URI("y"), "a b c"),
 						KV.of(new URI("z"), "a m n")))
-				.apply(new TFIDF.ComputeTfIdf());
+				.apply(new TfIdf.ComputeTfIdf());
 
 		PCollection<String> words = wordToUriAndTfIdf
 				.apply(Keys.<String>create())
