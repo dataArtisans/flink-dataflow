@@ -22,7 +22,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.dataartisans</groupId>
-	<artifactId>flink-dataflow</artifactId>
+	<artifactId>flink-dataflow_${scala.major.version}</artifactId>
 	<version>0.3-SNAPSHOT</version>
 
 	<name>Flink Beam Runner</name>
@@ -240,6 +240,23 @@
 						<argument>--parallelism=${parallelism}</argument>
 					</arguments>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.4.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>true</createDependencyReducedPom>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 
 		</plugins>
