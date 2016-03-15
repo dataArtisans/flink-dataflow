@@ -23,7 +23,7 @@
 
 	<groupId>com.dataartisans</groupId>
 	<artifactId>flink-dataflow-parent</artifactId>
-	<version>0.3-SNAPSHOT</version>
+	<version>0.3.0</version>
 
 	<name>Flink Beam Runner</name>
 	<packaging>pom</packaging>
@@ -47,7 +47,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<flink.version>1.0.0</flink.version>
-		<beam.version>1.5.0-SNAPSHOT</beam.version>
+		<beam.version>1.5.0</beam.version>
 	</properties>
 
 	<repositories>

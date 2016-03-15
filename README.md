@@ -150,8 +150,8 @@ The contents of the root `pom.xml` should be slightly changed aftewards (explana
     <dependencies>
         <dependency>
             <groupId>com.dataartisans</groupId>
-            <artifactId>flink-dataflow</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <artifactId>flink-dataflow_2.10</artifactId>
+            <version>0.3.0</version>
         </dependency>
     </dependencies>
 
