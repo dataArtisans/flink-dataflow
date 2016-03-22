@@ -139,7 +139,7 @@ public class FlinkPipelineExecutionEnvironment {
 			if (this.flinkPipelineTranslator == null) {
 				throw new RuntimeException("FlinkPipelineTranslator not initialized.");
 			}
-			return this.flinkStreamEnv.execute();
+			return this.flinkStreamEnv.execute(options.getJobName());
 		} else {
 			if (this.flinkBatchEnv == null) {
 				throw new RuntimeException("FlinkPipelineExecutionEnvironment not initialized.");
@@ -147,7 +147,7 @@ public class FlinkPipelineExecutionEnvironment {
 			if (this.flinkPipelineTranslator == null) {
 				throw new RuntimeException("FlinkPipelineTranslator not initialized.");
 			}
-			return this.flinkBatchEnv.execute();
+			return this.flinkBatchEnv.execute(options.getJobName());
 		}
 	}
 
