@@ -20,7 +20,6 @@ import com.dataartisans.flink.dataflow.translation.wrappers.streaming.io.Unbound
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.io.Read;
 import com.google.cloud.dataflow.sdk.io.TextIO;
-import com.google.cloud.dataflow.sdk.io.UnboundedSource;
 import com.google.cloud.dataflow.sdk.options.Default;
 import com.google.cloud.dataflow.sdk.options.Description;
 import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
@@ -28,7 +27,7 @@ import com.google.cloud.dataflow.sdk.transforms.*;
 import com.google.cloud.dataflow.sdk.transforms.windowing.*;
 import com.google.cloud.dataflow.sdk.values.KV;
 import com.google.cloud.dataflow.sdk.values.PCollection;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer082;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.joda.time.Duration;
 
@@ -102,7 +101,7 @@ public class KafkaWindowedWordCountExample {
 	public static void main(String[] args) {
 		PipelineOptionsFactory.register(KafkaStreamingWordCountOptions.class);
 		KafkaStreamingWordCountOptions options = PipelineOptionsFactory.fromArgs(args).as(KafkaStreamingWordCountOptions.class);
-		options.setJobName("KafkaExample");
+		options.setJobName("KafkaExample - WindowSize: " + options.getWindowSize() + " seconds");
 		options.setStreaming(true);
 		options.setCheckpointingInterval(1000L);
 		options.setNumberOfExecutionRetries(5);
@@ -119,12 +118,12 @@ public class KafkaWindowedWordCountExample {
 
 		// this is the Flink consumer that reads the input to
 		// the program from a kafka topic.
-		FlinkKafkaConsumer082 kafkaConsumer = new FlinkKafkaConsumer082<>(
+		FlinkKafkaConsumer08<String> kafkaConsumer = new FlinkKafkaConsumer08<>(
 				options.getKafkaTopic(),
 				new SimpleStringSchema(), p);
 
 		PCollection<String> words = pipeline
-				.apply(Read.from(new UnboundedFlinkSource<String, UnboundedSource.CheckpointMark>(options, kafkaConsumer)).named("StreamingWordCount"))
+				.apply(Read.from(new UnboundedFlinkSource<>(kafkaConsumer)).named("StreamingWordCount"))
 				.apply(ParDo.of(new ExtractWordsFn()))
 				.apply(Window.<String>into(FixedWindows.of(Duration.standardSeconds(options.getWindowSize())))
 						.triggering(AfterWatermark.pastEndOfWindow()).withAllowedLateness(Duration.ZERO)
