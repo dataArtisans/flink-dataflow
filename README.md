@@ -1,8 +1,10 @@
-Migrating to Beam
+Migration to Beam
 -----------------
 
-The Flink Runner has been donated to [Apache Beam](https://github.com/apache/incubator-beam/). We will
-only provide small fixes here and move the main development to the Beam repository.
+This repository is only for reference. The Flink Runner has been donated to
+[Apache Beam](https://github.com/apache/incubator-beam/). Development has
+been moved to the Beam repository; new features or bug fixes will only be
+provided as part of Beam.
 
 Please see the [Flink Runner in the Beam repository](https://github.com/apache/incubator-beam/tree/master/runners/flink).
 
