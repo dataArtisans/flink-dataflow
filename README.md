@@ -1,7 +1,7 @@
 Migration to Beam
 -----------------
 
-This repository is only for reference. The Flink Runner has been donated to
+This repository is only for reference. The Flink™ Runner has been donated to
 [Apache Beam](https://github.com/apache/incubator-beam/). Development has
 been moved to the Beam repository; new features or bug fixes will only be
 provided as part of Beam.
@@ -12,15 +12,15 @@ Please see the [Flink Runner in the Beam repository](https://github.com/apache/i
 Flink-Dataflow
 --------------
 
-Flink-Dataflow is a Runner for Google Dataflow (aka Apache Beam) which enables you to
-run Dataflow programs with Flink. It integrates seamlessly with the Dataflow
+Flink-Dataflow is a Runner for Google Dataflow (aka Apache Beam™) which enables you to
+run Dataflow programs with Apache Flink™. It integrates seamlessly with the Dataflow
 API, allowing you to execute Dataflow programs in streaming or batch mode.
 
 ## Streaming
 
 ### Full Dataflow Windowing and Triggering Semantics
 
-The Flink Dataflow Runner supports *Event Time* allowing you to analyze data with respect to its
+The Flink™ Dataflow Runner supports *Event Time* allowing you to analyze data with respect to its
 associated timestamp. It handles out-or-order and late-arriving elements. You may leverage the full
 power of the Dataflow windowing semantics like *time-based*, *sliding*, *tumbling*, or *count*
 windows. You may build *session* windows which allow you to keep track of events associated with
@@ -28,7 +28,7 @@ each other.
 
 ### Fault-Tolerance
 
-The program's state is persisted by Apache Flink. You may re-run and resume your program upon
+The program's state is persisted by Apache Flink™. You may re-run and resume your program upon
 failure or if you decide to continue computation at a later time.
 
 ### Sources and Sinks
@@ -212,3 +212,7 @@ folder to the Flink cluster using the command-line utility like so:
 
 For more information, please visit the [Apache Flink Website](http://flink.apache.org) or contact
 the [Mailinglists](http://flink.apache.org/community.html#mailing-lists).
+
+
+# Disclaimer
+Apache®, Apache Flink™, Flink™, and the Apache feather logo are trademarks of [The Apache Software Foundation](http://apache.org).
